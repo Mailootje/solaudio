@@ -12,24 +12,19 @@ export default function RadioPage() {
     const [countries, setCountries] = useState<Country[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isHydrated, setIsHydrated] = useState(false); // To track hydration
 
     useEffect(() => {
+        // Mark hydration as complete
+        setIsHydrated(true);
+
         const fetchCountries = async () => {
             try {
                 const response = await fetch("https://de1.api.radio-browser.info/json/countries");
-
-                if (!response.ok) {
-                    throw new Error("Failed to fetch countries");
-                }
-
                 const data: Country[] = await response.json();
                 setCountries(data);
             } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError("An unknown error occurred.");
-                }
+                setError("Failed to fetch countries. Please try again later.");
             } finally {
                 setLoading(false);
             }
@@ -37,6 +32,11 @@ export default function RadioPage() {
 
         fetchCountries();
     }, []);
+
+    if (!isHydrated) {
+        // Prevent rendering until hydrated
+        return null;
+    }
 
     if (loading) {
         return (
