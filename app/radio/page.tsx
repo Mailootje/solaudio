@@ -22,7 +22,23 @@ export default function RadioPage() {
             try {
                 const response = await fetch("https://de1.api.radio-browser.info/json/countries");
                 const data: Country[] = await response.json();
-                setCountries(data);
+
+                // Process the data to remove duplicates and keep the one with the highest stationcount
+                const uniqueCountriesMap = new Map<string, Country>();
+
+                data.forEach((country) => {
+                    const existingCountry = uniqueCountriesMap.get(country.name);
+                    if (!existingCountry || country.stationcount > existingCountry.stationcount) {
+                        uniqueCountriesMap.set(country.name, country);
+                    }
+                });
+
+                const uniqueCountries = Array.from(uniqueCountriesMap.values());
+
+                // Optionally, sort the countries alphabetically
+                uniqueCountries.sort((a, b) => a.name.localeCompare(b.name));
+
+                setCountries(uniqueCountries);
             } catch (err) {
                 setError("Failed to fetch countries. Please try again later.");
             } finally {
@@ -53,12 +69,10 @@ export default function RadioPage() {
         );
     }
 
-    // Filter countries based on search query using regular expressions
-    const filteredCountries = countries.filter((country) => {
-        if (!searchQuery) return true; // If search query is empty, show all countries
-        const regex = new RegExp(`\\b${searchQuery.toLowerCase()}`, 'i');
-        return regex.test(country.name.toLowerCase());
-    });
+    // Filter countries based on search query
+    const filteredCountries = countries.filter((country) =>
+        country.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="min-h-screen p-8 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
