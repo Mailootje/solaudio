@@ -1,13 +1,9 @@
 import CountryRadioPage from "./CountryRadioPage";
 
-// Define the dynamic route's static params
-export async function generateStaticParams() {
-    // Replace with actual API or data fetching logic if needed
-    return [{ country: "Andorra" }, { country: "Netherlands" }]; // Example countries
-}
-
-export default async function Page({ params }: { params: { country: string } }) {
-    const country = decodeURIComponent(params.country);
+export default async function Page({ params }: { params: Promise<{ country: string }> }) {
+    // Await and resolve `params` as it is a Promise
+    const resolvedParams = await params;
+    const country = decodeURIComponent(resolvedParams.country);
 
     if (!country) {
         return (

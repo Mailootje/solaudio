@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+type Station = {
+    stationuuid: string;
+    name: string;
+    bitrate: number;
+    url: string;
+};
+
 export default function CountryRadioPage({ country }: { country: string }) {
-    const [stations, setStations] = useState([]);
+    const [stations, setStations] = useState<Station[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -24,10 +31,14 @@ export default function CountryRadioPage({ country }: { country: string }) {
                     throw new Error(`Failed to fetch stations for ${country}.`);
                 }
 
-                const data = await response.json();
+                const data: Station[] = await response.json();
                 setStations(data);
             } catch (err) {
-                setError(err.message || "Failed to fetch stations. Please try again later.");
+                if (err instanceof Error) {
+                    setError(err.message);
+                } else {
+                    setError("An unknown error occurred.");
+                }
             } finally {
                 setLoading(false);
             }

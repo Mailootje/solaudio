@@ -3,19 +3,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type Country = {
+    name: string;
+    stationcount: number;
+};
+
 export default function RadioPage() {
-    const [countries, setCountries] = useState([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCountries = async () => {
             try {
                 const response = await fetch("https://de1.api.radio-browser.info/json/countries");
-                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch countries");
+                }
+
+                const data: Country[] = await response.json();
                 setCountries(data);
             } catch (err) {
-                setError("Failed to fetch countries. Please try again later.");
+                if (err instanceof Error) {
+                    setError(err.message);
+                } else {
+                    setError("An unknown error occurred.");
+                }
             } finally {
                 setLoading(false);
             }
