@@ -22,7 +22,7 @@ export default function RootLayout({
             <nav className="container mx-auto flex justify-between items-center py-4 px-6">
                 <Link href="/" className="flex items-center">
                     <Image
-                        src="/next.svg"
+                        src="/SolAudioLogo.png"
                         alt="SolAudio Logo"
                         width={40}
                         height={40}
