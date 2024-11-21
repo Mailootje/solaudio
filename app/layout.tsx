@@ -43,11 +43,40 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             </span>
                 </Link>
 
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex space-x-6">
+                    <Link
+                        href="/"
+                        className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
+                    >
+                        <FaHome className="mr-1" /> Home
+                    </Link>
+                    <Link
+                        href="/radio"
+                        className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
+                    >
+                        <MdRadio className="mr-1" /> Radio
+                    </Link>
+                    <Link
+                        href="/about"
+                        className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
+                    >
+                        <FaInfoCircle className="mr-1" /> About
+                    </Link>
+                    <Link
+                        href="/contact"
+                        className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
+                    >
+                        <FaEnvelope className="mr-1" /> Contact
+                    </Link>
+                </div>
+
                 {/* Hamburger Menu for Mobile */}
                 <button
                     className="block md:hidden relative w-8 h-8 focus:outline-none z-50"
                     onClick={toggleMenu}
                     aria-label="Toggle Menu"
+                    aria-expanded={menuOpen}
                 >
                     {/* Hamburger Icon */}
                     <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-0.5 bg-current transition duration-300 ease-in-out ${menuOpen ? 'rotate-45' : '-translate-y-1.5'}`}></div>
@@ -61,6 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div
             className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out z-40 ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
             onClick={toggleMenu}
+            aria-hidden={!menuOpen}
         ></div>
 
         {/* Slide-in Menu */}

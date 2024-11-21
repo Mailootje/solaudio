@@ -120,20 +120,20 @@ export default function Home() {
                                 className="text-gray-600 dark:text-gray-400 hover:text-[#9945FF] transition duration-300"
                             >
                                 <Image
-                                    src="/facebook.svg"
-                                    alt="Facebook"
+                                    src="/instagram.svg"
+                                    alt="I"
                                     width={24}
                                     height={24}
                                     className="mx-auto"
                                 />
                             </a>
                             <a
-                                href="#"
+                                href="https://discord.com/invite/A6mreUYEcR"
                                 className="text-gray-600 dark:text-gray-400 hover:text-[#9945FF] transition duration-300"
                             >
                                 <Image
-                                    src="/instagram.svg"
-                                    alt="Instagram"
+                                    src="/discord.svg"
+                                    alt="D"
                                     width={24}
                                     height={24}
                                     className="mx-auto"
