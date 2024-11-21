@@ -108,8 +108,8 @@ export default function Home() {
                                 className="text-gray-600 dark:text-gray-400 hover:text-[#9945FF] transition duration-300"
                             >
                                 <Image
-                                    src="/twitter.svg"
-                                    alt="Twitter"
+                                    src="/X.svg"
+                                    alt="X"
                                     width={24}
                                     height={24}
                                     className="mx-auto"
