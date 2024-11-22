@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
 
 type Country = {
     name: string;
@@ -20,8 +21,10 @@ export default function RadioPage() {
 
         const fetchCountries = async () => {
             try {
-                const response = await fetch("https://de1.api.radio-browser.info/json/countries");
-                const data: Country[] = await response.json();
+                const data: Country[] = await fetchWithFallback(
+                    "https://de1.api.radio-browser.info/json/countries",
+                    "https://at1.api.radio-browser.info/json/countries"
+                );
 
                 // Process the data to remove duplicates and keep the one with the highest stationcount
                 const uniqueCountriesMap = new Map<string, Country>();
@@ -40,7 +43,11 @@ export default function RadioPage() {
 
                 setCountries(uniqueCountries);
             } catch (err) {
-                setError("Failed to fetch countries. Please try again later.");
+                if (err instanceof Error) {
+                    setError(err.message);
+                } else {
+                    setError("Failed to fetch countries. Please try again later.");
+                }
             } finally {
                 setLoading(false);
             }

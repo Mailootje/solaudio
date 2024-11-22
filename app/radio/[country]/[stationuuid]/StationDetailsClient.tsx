@@ -1,8 +1,7 @@
-// /src/app/radio/[country]/[stationuuid]/StationDetailsClient.tsx
-
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
 
 type StationDetailsClientProps = {
     country: string;
@@ -31,15 +30,11 @@ export default function StationDetailsClient({
             setLoading(true);
 
             try {
-                const response = await fetch(
-                    `https://de1.api.radio-browser.info/json/stations/byuuid/${stationuuid}`
+                const data: Station[] = await fetchWithFallback(
+                    `https://de1.api.radio-browser.info/json/stations/byuuid/${stationuuid}`,
+                    `https://at1.api.radio-browser.info/json/stations/byuuid/${stationuuid}`
                 );
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch details for station ${stationuuid}.`);
-                }
-
-                const data: Station[] = await response.json();
                 if (data.length > 0) {
                     setStation(data[0]); // Use the first result
                 } else {

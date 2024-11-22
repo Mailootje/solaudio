@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
 
 type Station = {
     stationuuid: string;
@@ -24,23 +25,21 @@ export default function CountryRadioPage({ country }: { country: string }) {
             setLoading(true);
 
             try {
-                const response = await fetch(
+                const data: Station[] = await fetchWithFallback(
                     `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(
+                        country
+                    )}`,
+                    `https://at1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(
                         country
                     )}`
                 );
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch stations for ${country}.`);
-                }
-
-                const data: Station[] = await response.json();
                 setStations(data);
             } catch (err) {
                 if (err instanceof Error) {
                     setError(err.message);
                 } else {
-                    setError("An unknown error occurred.");
+                    setError("Failed to fetch stations. Please try again later.");
                 }
             } finally {
                 setLoading(false);
