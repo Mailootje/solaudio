@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
 
 type Country = {
     name: string;

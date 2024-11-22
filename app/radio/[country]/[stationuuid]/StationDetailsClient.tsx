@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
 
 type StationDetailsClientProps = {
     country: string;
@@ -54,103 +54,9 @@ export default function StationDetailsClient({
         fetchStationDetails();
     }, [stationuuid]);
 
-    // Audio Equalizer Visualization
-    useEffect(() => {
-        if (station && audioRef.current && canvasRef.current) {
-            const audioElement = audioRef.current;
+    // ... (Rest of your component remains unchanged)
 
-            // Set crossOrigin to allow CORS
-            audioElement.crossOrigin = "anonymous";
-
-            // Initialize Web Audio API context
-            const audioContext = new (window.AudioContext ||
-                (window as any).webkitAudioContext)();
-            audioContextRef.current = audioContext;
-
-            const source = audioContext.createMediaElementSource(audioElement);
-            const analyser = audioContext.createAnalyser();
-
-            // Connect nodes
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-
-            // Handle AudioContext suspension
-            const handlePlay = async () => {
-                if (audioContext.state === "suspended") {
-                    await audioContext.resume();
-                }
-            };
-
-            audioElement.addEventListener("play", handlePlay);
-
-            // Set up the canvas visualization
-            const canvas = canvasRef.current;
-            const canvasContext = canvas.getContext("2d");
-
-            if (canvasContext) {
-                analyser.fftSize = 512; // Increased for better resolution
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                // Resize canvas to be responsive
-                const resizeCanvas = () => {
-                    canvas.width = canvas.clientWidth;
-                    canvas.height = canvas.clientHeight;
-                };
-
-                resizeCanvas();
-                window.addEventListener("resize", resizeCanvas);
-
-                const draw = () => {
-                    requestAnimationFrame(draw);
-
-                    analyser.getByteFrequencyData(dataArray);
-
-                    // Clear the canvas with a semi-transparent background for trail effect
-                    canvasContext.fillStyle = "rgba(0, 0, 0, 0.2)";
-                    canvasContext.fillRect(0, 0, canvas.width, canvas.height);
-
-                    const barWidth = (canvas.width / bufferLength) * 1.5;
-                    let x = 0;
-
-                    for (let i = 0; i < bufferLength; i++) {
-                        const barHeight = dataArray[i] / 2; // Scale down for better fit
-
-                        // Create a dynamic gradient for each bar
-                        const gradient = canvasContext.createLinearGradient(
-                            x,
-                            canvas.height,
-                            x,
-                            canvas.height - barHeight
-                        );
-                        gradient.addColorStop(0, `rgba(255, 0, 150, 1)`); // Pink
-                        gradient.addColorStop(0.5, `rgba(0, 204, 255, 1)`); // Blue
-                        gradient.addColorStop(1, `rgba(0, 255, 0, 1)`); // Green
-
-                        canvasContext.fillStyle = gradient;
-                        canvasContext.fillRect(
-                            x,
-                            canvas.height - barHeight,
-                            barWidth - 2, // Subtracting for spacing
-                            barHeight
-                        );
-
-                        x += barWidth;
-                    }
-                };
-
-                draw();
-
-                // Clean up on unmount
-                return () => {
-                    audioElement.removeEventListener("play", handlePlay);
-                    audioContext.close();
-                    window.removeEventListener("resize", resizeCanvas);
-                };
-            }
-        }
-    }, [station]);
-
+    // Ensure that all JSX error messages also use template literals correctly
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">

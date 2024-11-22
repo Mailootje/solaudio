@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the import path as necessary
+import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
 
 type Station = {
     stationuuid: string;
@@ -17,8 +17,8 @@ export default function CountryRadioPage({ country }: { country: string }) {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const stationsPerPage = 16;
-    const [searchQuery, setSearchQuery] = useState(""); // Added state for search query
-    const router = useRouter(); // Next.js router
+    const [searchQuery, setSearchQuery] = useState("");
+    const router = useRouter();
 
     useEffect(() => {
         const fetchStations = async () => {
@@ -72,7 +72,7 @@ export default function CountryRadioPage({ country }: { country: string }) {
     }
 
     if (error) {
-        return <p>{error}</p>;
+        return <p className="text-lg text-red-500">{error}</p>;
     }
 
     return (
