@@ -57,7 +57,7 @@ export default function StationDetailsClient({
     // Set the document title when station data is available
     useEffect(() => {
         if (station) {
-            document.title = `${station.name} - Radio Station`;
+            document.title = `${station.name} - ${country}`;
         } else {
             document.title = "SolAudio.io";
         }
