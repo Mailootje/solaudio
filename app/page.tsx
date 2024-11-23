@@ -16,7 +16,7 @@ export default function Home() {
                         className="mx-auto mb-6"
                     />
                     <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 dark:text-gray-100 mb-4">
-                        Welcome to <span className="text-[#9945FF]">Barzan</span>!
+                        Welcome to <span className="text-[#9945FF]">SolAudio</span>!
                     </h1>
                     <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8">
                         Your hub for audio innovation and creativity.
