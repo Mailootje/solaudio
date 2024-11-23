@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import './globals.css'; // Import global styles
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaHome, FaInfoCircle, FaEnvelope } from 'react-icons/fa'; // Import FontAwesome icons
-import { MdRadio } from 'react-icons/md'; // Import Material Design icon for Radio
+import { FaHome, FaUser } from 'react-icons/fa'; // Import FaUser for Account
+import { MdRadio } from 'react-icons/md'; // Import MdRadio for Radio
 import { useState, useEffect } from 'react';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -39,8 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         className="mr-2"
                     />
                     <span className="text-2xl font-bold text-[#9945FF] dark:text-[#14F195]">
-                                SolAudio
-                            </span>
+                            SolAudio
+                        </span>
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -58,16 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <MdRadio className="mr-1" /> Radio
                     </Link>
                     <Link
-                        href="/about"
+                        href="/account/dashboard"
                         className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
                     >
-                        <FaInfoCircle className="mr-1" /> About
-                    </Link>
-                    <Link
-                        href="/contact"
-                        className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
-                    >
-                        <FaEnvelope className="mr-1" /> Contact
+                        <FaUser className="mr-1" /> Account
                     </Link>
                 </div>
 
@@ -107,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
                             onClick={() => setMenuOpen(false)}
                         >
-                            <FaHome className="mr-3" size={20} /> Home
+                            <FaHome className="mr-3" size={20}/> Home
                         </Link>
                     </li>
                     <li>
@@ -116,25 +110,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
                             onClick={() => setMenuOpen(false)}
                         >
-                            <MdRadio className="mr-3" size={20} /> Radio
+                            <MdRadio className="mr-3" size={20}/> Radio
                         </Link>
                     </li>
                     <li>
                         <Link
-                            href="/about"
+                            href="/account/dashboard"
                             className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
                             onClick={() => setMenuOpen(false)}
                         >
-                            <FaInfoCircle className="mr-3" size={20} /> About
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            href="/contact"
-                            className="flex items-center text-gray-700 dark:text-gray-200 hover:text-[#9945FF] dark:hover:text-[#14F195] font-medium"
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            <FaEnvelope className="mr-3" size={20} /> Contact
+                            <FaUser className="mr-3" size={20}/> Account
                         </Link>
                     </li>
                 </ul>
