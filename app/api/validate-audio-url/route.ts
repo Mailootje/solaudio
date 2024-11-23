@@ -58,6 +58,12 @@ async function validateAudioUrl(
         const req = protocol.request(options, (res) => {
             const { statusCode, headers } = res;
 
+            // Type Guard: Ensure statusCode is a number
+            if (typeof statusCode !== 'number') {
+                reject(new Error('Invalid response: missing status code.'));
+                return;
+            }
+
             if (statusCode === 200 || statusCode === 206) { // 206 Partial Content for streams
                 const contentType = headers['content-type'];
                 if (contentType && contentType.startsWith('audio/')) {
