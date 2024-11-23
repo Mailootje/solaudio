@@ -54,9 +54,22 @@ export default function StationDetailsClient({
         fetchStationDetails();
     }, [stationuuid]);
 
+    // Set the document title when station data is available
+    useEffect(() => {
+        if (station) {
+            document.title = `${station.name} - Radio Station`;
+        } else {
+            document.title = "SolAudio.io";
+        }
+
+        // Optional: Cleanup to reset title when component unmounts
+        return () => {
+            document.title = "SolAudio.io";
+        };
+    }, [station]);
+
     // ... (Rest of your component remains unchanged)
 
-    // Ensure that all JSX error messages also use template literals correctly
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
