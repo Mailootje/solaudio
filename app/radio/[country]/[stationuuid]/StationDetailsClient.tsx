@@ -19,12 +19,12 @@ export default function StationDetailsClient({
                                                  country,
                                                  stationuuid,
                                              }: StationDetailsClientProps) {
+    // State variables
     const [station, setStation] = useState<Station | null>(null);
     const [loading, setLoading] = useState(true);
     const [stationError, setStationError] = useState<string | null>(null); // Error related to fetching station details
-    const [validationError, setValidationError] = useState<string | null>(null); // Error related to URL validation
-    const [playbackError, setPlaybackError] = useState<string | null>(null); // Error related to audio playback
-    const [audioUrl, setAudioUrl] = useState<string>(""); // Validated Audio URL
+    const [playbackError, setPlaybackError] = useState<string | null>(null); // Error related to audio playback or validation
+    const [audioUrl, setAudioUrl] = useState<string | null>(null); // Validated Audio URL
     const [audioRetryCount, setAudioRetryCount] = useState<number>(0); // Tracks audio playback retries
     const [isRetrying, setIsRetrying] = useState<boolean>(false); // Prevents concurrent retries
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -89,9 +89,8 @@ export default function StationDetailsClient({
     const fetchStationDetails = async () => {
         setLoading(true);
         setStationError(null); // Reset station error
-        setValidationError(null); // Reset validation error
         setPlaybackError(null); // Reset playback error
-        setAudioUrl("");
+        setAudioUrl(null);
         setAudioRetryCount(0); // Reset audio retry count on new fetch
 
         try {
@@ -112,8 +111,8 @@ export default function StationDetailsClient({
         } catch (err: any) {
             if (err instanceof Error) {
                 // Distinguish between validation errors and station fetching errors
-                if (err.message.includes("validate")) {
-                    setValidationError(err.message);
+                if (err.message.toLowerCase().includes("validate")) {
+                    setPlaybackError(err.message); // Treat validation errors as playback errors
                 } else {
                     setStationError(err.message);
                 }
@@ -145,14 +144,48 @@ export default function StationDetailsClient({
     }, [station, country]);
 
     /**
+     * Translates MediaError codes to user-friendly messages.
+     * @param error - The MediaError object from the audio element.
+     * @returns A descriptive error message.
+     */
+    const getMediaErrorMessage = (error: MediaError): string => {
+        switch (error.code) {
+            case MediaError.MEDIA_ERR_ABORTED:
+                return "Playback was aborted.";
+            case MediaError.MEDIA_ERR_NETWORK:
+                return "A network error caused the audio download to fail.";
+            case MediaError.MEDIA_ERR_DECODE:
+                return "The audio playback was aborted due to a corruption problem or because the audio used features your browser did not support.";
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                return "This Radio Station doesn't work at the moment.";
+            default:
+                return "An unknown error occurred during audio playback.";
+        }
+    };
+
+    /**
      * Handles audio playback errors by attempting to fetch a new URL.
      * Limits the number of retry attempts to prevent infinite loops.
      */
     const handleAudioError = async () => {
         if (!station) return;
 
+        const audioElement = audioRef.current;
+        if (audioElement && audioElement.error) {
+            const errorMessage = getMediaErrorMessage(audioElement.error);
+            setPlaybackError(errorMessage);
+
+            // Optionally, you can provide specific handling based on error codes
+            // For example, if the format is not supported, you might not retry
+
+            if (audioElement.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+                // Do not retry for unsupported formats
+                return;
+            }
+        }
+
         if (audioRetryCount >= MAX_AUDIO_RETRIES || isRetrying) {
-            setPlaybackError("Failed to play audio after multiple attempts.");
+            setPlaybackError((prev) => prev || "Failed to play audio after multiple attempts.");
             return;
         }
 
@@ -191,16 +224,9 @@ export default function StationDetailsClient({
     if (stationError) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                <p className="text-lg text-red-500">{stationError}</p>
-            </div>
-        );
-    }
-
-    // Render validation errors
-    if (validationError) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                <p className="text-lg text-red-500">{validationError}</p>
+                <p className="text-lg text-red-500" role="alert">
+                    {stationError}
+                </p>
             </div>
         );
     }
@@ -230,18 +256,13 @@ export default function StationDetailsClient({
             </header>
 
             <div className="flex flex-col items-center">
-                {/* Display validation error above the audio player */}
-                {validationError && (
-                    <p className="text-lg text-red-500 mb-2">
-                        {validationError}
-                    </p>
-                )}
-
                 {/* Display playback error above the audio player */}
                 {playbackError && (
-                    <p className="text-lg text-red-500 mb-2">
-                        {playbackError}
-                    </p>
+                    <div className="w-full max-w-md p-4 mb-2 bg-red-100 text-red-700 rounded" role="alert" aria-live="assertive">
+                        <p className="text-lg">
+                            {playbackError}
+                        </p>
+                    </div>
                 )}
 
                 {audioUrl ? (
@@ -255,7 +276,9 @@ export default function StationDetailsClient({
                     ></audio>
                 ) : (
                     <p className="text-gray-600 dark:text-gray-400 mt-4">
-                        Loading audio...
+                        {playbackError
+                            ? "Audio could not be loaded due to validation failure."
+                            : "Loading audio..."}
                     </p>
                 )}
 

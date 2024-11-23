@@ -26,7 +26,7 @@ async function validateAudioUrl(
     retryCount: number = 0
 ): Promise<string> {
     if (redirectCount > MAX_REDIRECTS) {
-        throw new Error('Too many redirects.');
+        throw new Error('Too many redirects while validating the audio URL.');
     }
 
     try {
@@ -43,7 +43,7 @@ async function validateAudioUrl(
                 const newUrl = new URL(location, url).toString();
                 return await validateAudioUrl(newUrl, redirectCount + 1, retryCount);
             } else {
-                throw new Error('Redirect response without Location header.');
+                throw new Error('Redirect response received without a Location header.');
             }
         } else if (response.status >= 500 && response.status < 600) {
             // Retry for server errors
@@ -51,7 +51,7 @@ async function validateAudioUrl(
                 await sleep(RETRY_DELAY_MS * Math.pow(2, retryCount)); // Exponential backoff
                 return await validateAudioUrl(url, redirectCount, retryCount + 1);
             }
-            throw new Error(`Server error: ${response.status}`);
+            throw new Error(`Server error encountered: ${response.status}`);
         } else {
             throw new Error(`Unexpected response status: ${response.status}`);
         }
@@ -62,7 +62,7 @@ async function validateAudioUrl(
             return await validateAudioUrl(url, redirectCount, retryCount + 1);
         }
         if (error.name === 'FetchError') {
-            throw new Error('Failed to fetch the URL.');
+            throw new Error('Network error: Failed to fetch the provided URL.');
         }
         throw error;
     }
@@ -88,8 +88,10 @@ export async function GET(request: Request) {
         const finalUrl = await validateAudioUrl(url);
         return NextResponse.json({ url: finalUrl });
     } catch (error: any) {
+        // Optionally log the error here for server monitoring
+        console.error('Error validating audio URL:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to validate URL.' },
+            { error: error.message || 'Failed to validate the audio URL.' },
             { status: 500 }
         );
     }
