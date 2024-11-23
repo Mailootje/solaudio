@@ -65,6 +65,12 @@ export default function Home() {
                                             "Launch the platform with a soft rollout to gather feedback. Execute strategic marketing campaigns to build awareness and attract users to the platform.",
                                         ][index]}
                                     </p>
+                                    <audio
+                                        controls
+                                        className="w-full max-w-md mt-4"
+                                        src="http://quantumcast.vrtcdn.be/stubru/mp3-128"
+                                        crossOrigin="anonymous"
+                                    ></audio>
                                 </div>
                             </div>
                         ))}
@@ -74,7 +80,7 @@ export default function Home() {
 
             {/* Footer */}
             <footer className="bg-gray-100 dark:bg-gray-900 py-8">
-                <div className="container mx-auto px-8">
+            <div className="container mx-auto px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center">
                         <div className="text-center sm:text-left mb-4 sm:mb-0">
                             <Image
