@@ -137,7 +137,7 @@ export default function CountryRadioPage({ country }: { country: string }) {
                         </p>
                         {station.isBroken && (
                             <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold text-red-700 bg-red-200 rounded">
-                                Broken
+                                Currently out of service
                             </span>
                         )}
                     </div>
