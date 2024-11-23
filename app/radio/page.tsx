@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
+import { generateApiUrls } from "@/utils/apiUrls";
 
 type Country = {
     name: string;
@@ -23,9 +24,8 @@ export default function RadioPage() {
         const fetchCountriesAndBrokenStations = async () => {
             try {
                 // Fetch countries
-                const countriesData: Country[] = await fetchWithFallback(
-                    "https://de1.api.radio-browser.info/json/countries",
-                    "https://at1.api.radio-browser.info/json/countries"
+                const countriesData: Country[] = await fetchWithFallback<Country[]>(
+                    generateApiUrls("/json/countries")
                 );
 
                 // Remove duplicates and keep the one with the highest stationcount
@@ -44,9 +44,8 @@ export default function RadioPage() {
                 uniqueCountries.sort((a, b) => a.name.localeCompare(b.name));
 
                 // Fetch broken stations
-                const brokenStations: { country: string }[] = await fetchWithFallback(
-                    "https://de1.api.radio-browser.info/json/stations/broken",
-                    "https://at1.api.radio-browser.info/json/stations/broken"
+                const brokenStations: { country: string }[] = await fetchWithFallback<{ country: string }[]>(
+                    generateApiUrls("/json/stations/broken")
                 );
 
                 // Calculate broken counts per country

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
+import { generateApiUrls } from "@/utils/apiUrls";
 
 type StationDetailsClientProps = {
     country: string;
@@ -30,9 +31,8 @@ export default function StationDetailsClient({
             setLoading(true);
 
             try {
-                const data: Station[] = await fetchWithFallback(
-                    `https://de1.api.radio-browser.info/json/stations/byuuid/${stationuuid}`,
-                    `https://at1.api.radio-browser.info/json/stations/byuuid/${stationuuid}`
+                const data: Station[] = await fetchWithFallback<Station[]>(
+                    generateApiUrls("/json/stations/byuuid/", `${stationuuid}`)
                 );
 
                 if (data.length > 0) {

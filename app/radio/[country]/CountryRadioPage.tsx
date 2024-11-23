@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the path as necessary
+import { generateApiUrls } from "@/utils/apiUrls";
 
 type Station = {
     stationuuid: string;
@@ -27,19 +28,13 @@ export default function CountryRadioPage({ country }: { country: string }) {
 
             try {
                 // Fetch all stations for the country
-                const data: Station[] = await fetchWithFallback(
-                    `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(
-                        country
-                    )}`,
-                    `https://at1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(
-                        country
-                    )}`
+                const data: Station[] = await fetchWithFallback<Station[]>(
+                    generateApiUrls("/json/stations/bycountry/", `${encodeURIComponent(country)}`)
                 );
 
                 // Fetch broken stations globally
-                const brokenStations: { stationuuid: string; country: string }[] = await fetchWithFallback(
-                    "https://de1.api.radio-browser.info/json/stations/broken",
-                    "https://at1.api.radio-browser.info/json/stations/broken"
+                const brokenStations: { stationuuid: string; country: string }[] = await fetchWithFallback<{ stationuuid: string; country: string }[]>(
+                    generateApiUrls("/json/stations/broken")
                 );
 
                 // Create a Set of broken station UUIDs for the current country
