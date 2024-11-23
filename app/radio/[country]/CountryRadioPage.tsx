@@ -9,6 +9,7 @@ type Station = {
     name: string;
     bitrate: number;
     url: string;
+    isBroken?: boolean; // New optional property
 };
 
 export default function CountryRadioPage({ country }: { country: string }) {
@@ -25,6 +26,7 @@ export default function CountryRadioPage({ country }: { country: string }) {
             setLoading(true);
 
             try {
+                // Fetch all stations for the country
                 const data: Station[] = await fetchWithFallback(
                     `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(
                         country
@@ -34,7 +36,26 @@ export default function CountryRadioPage({ country }: { country: string }) {
                     )}`
                 );
 
-                setStations(data);
+                // Fetch broken stations globally
+                const brokenStations: { stationuuid: string; country: string }[] = await fetchWithFallback(
+                    "https://de1.api.radio-browser.info/json/stations/broken",
+                    "https://at1.api.radio-browser.info/json/stations/broken"
+                );
+
+                // Create a Set of broken station UUIDs for the current country
+                const brokenUUIDs = new Set(
+                    brokenStations
+                        .filter((station) => station.country === country)
+                        .map((station) => station.stationuuid)
+                );
+
+                // Mark stations as broken if their UUID is in the brokenUUIDs Set
+                const updatedStations = data.map((station) => ({
+                    ...station,
+                    isBroken: brokenUUIDs.has(station.stationuuid),
+                }));
+
+                setStations(updatedStations);
             } catch (err) {
                 if (err instanceof Error) {
                     setError(err.message);
@@ -68,11 +89,19 @@ export default function CountryRadioPage({ country }: { country: string }) {
     }, [currentPage, totalPages]);
 
     if (loading) {
-        return <p>Loading stations...</p>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                <p className="text-lg text-gray-600 dark:text-gray-400">Loading stations...</p>
+            </div>
+        );
     }
 
     if (error) {
-        return <p className="text-lg text-red-500">{error}</p>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                <p className="text-lg text-red-500">{error}</p>
+            </div>
+        );
     }
 
     return (
@@ -94,8 +123,16 @@ export default function CountryRadioPage({ country }: { country: string }) {
                 {currentStations.map((station) => (
                     <div
                         key={station.stationuuid}
-                        className="p-4 rounded-lg shadow-lg bg-white dark:bg-gray-800 cursor-pointer"
-                        onClick={() => router.push(`/radio/${country}/${station.stationuuid}`)}
+                        className={`p-4 rounded-lg shadow-lg bg-white dark:bg-gray-800 ${
+                            station.isBroken
+                                ? "opacity-50 cursor-not-allowed"
+                                : "cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700"
+                        } transition`}
+                        onClick={() => {
+                            if (!station.isBroken) {
+                                router.push(`/radio/${encodeURIComponent(country)}/${station.stationuuid}`);
+                            }
+                        }}
                     >
                         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                             {station.name}
@@ -103,6 +140,11 @@ export default function CountryRadioPage({ country }: { country: string }) {
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             Bitrate: {station.bitrate} kbps
                         </p>
+                        {station.isBroken && (
+                            <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold text-red-700 bg-red-200 rounded">
+                                Broken
+                            </span>
+                        )}
                     </div>
                 ))}
             </div>

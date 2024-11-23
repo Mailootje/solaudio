@@ -7,6 +7,7 @@ import { fetchWithFallback } from "@/utils/fetchWithFallback"; // Adjust the pat
 type Country = {
     name: string;
     stationcount: number;
+    brokencount: number; // New property
 };
 
 export default function RadioPage() {
@@ -19,17 +20,18 @@ export default function RadioPage() {
     useEffect(() => {
         setIsHydrated(true);
 
-        const fetchCountries = async () => {
+        const fetchCountriesAndBrokenStations = async () => {
             try {
-                const data: Country[] = await fetchWithFallback(
+                // Fetch countries
+                const countriesData: Country[] = await fetchWithFallback(
                     "https://de1.api.radio-browser.info/json/countries",
                     "https://at1.api.radio-browser.info/json/countries"
                 );
 
-                // Process the data to remove duplicates and keep the one with the highest stationcount
+                // Remove duplicates and keep the one with the highest stationcount
                 const uniqueCountriesMap = new Map<string, Country>();
 
-                data.forEach((country) => {
+                countriesData.forEach((country) => {
                     const existingCountry = uniqueCountriesMap.get(country.name);
                     if (!existingCountry || country.stationcount > existingCountry.stationcount) {
                         uniqueCountriesMap.set(country.name, country);
@@ -38,22 +40,46 @@ export default function RadioPage() {
 
                 const uniqueCountries = Array.from(uniqueCountriesMap.values());
 
-                // Optionally, sort the countries alphabetically
+                // Sort countries alphabetically
                 uniqueCountries.sort((a, b) => a.name.localeCompare(b.name));
 
-                setCountries(uniqueCountries);
+                // Fetch broken stations
+                const brokenStations: { country: string }[] = await fetchWithFallback(
+                    "https://de1.api.radio-browser.info/json/stations/broken",
+                    "https://at1.api.radio-browser.info/json/stations/broken"
+                );
+
+                // Calculate broken counts per country
+                const brokenCountMap = new Map<string, number>();
+                brokenStations.forEach((station) => {
+                    const countryName = station.country;
+                    if (countryName) {
+                        brokenCountMap.set(
+                            countryName,
+                            (brokenCountMap.get(countryName) || 0) + 1
+                        );
+                    }
+                });
+
+                // Merge broken counts into countries data
+                const countriesWithBrokenCount: Country[] = uniqueCountries.map((country) => ({
+                    ...country,
+                    brokencount: brokenCountMap.get(country.name) || 0,
+                }));
+
+                setCountries(countriesWithBrokenCount);
             } catch (err) {
                 if (err instanceof Error) {
                     setError(err.message);
                 } else {
-                    setError("Failed to fetch countries. Please try again later.");
+                    setError("Failed to fetch data. Please try again later.");
                 }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCountries();
+        fetchCountriesAndBrokenStations();
     }, []);
 
     if (!isHydrated) {
@@ -113,6 +139,11 @@ export default function RadioPage() {
                         </h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             {country.stationcount} stations
+                            {country.brokencount > 0 && (
+                                <span className="ml-2 text-red-500">
+                                    ({country.brokencount} broken)
+                                </span>
+                            )}
                         </p>
                     </Link>
                 ))}
