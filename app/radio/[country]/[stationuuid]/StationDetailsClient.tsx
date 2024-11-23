@@ -21,44 +21,78 @@ export default function StationDetailsClient({
                                              }: StationDetailsClientProps) {
     const [station, setStation] = useState<Station | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [stationError, setStationError] = useState<string | null>(null); // Error related to fetching station details
+    const [validationError, setValidationError] = useState<string | null>(null); // Error related to URL validation
+    const [playbackError, setPlaybackError] = useState<string | null>(null); // Error related to audio playback
     const [audioUrl, setAudioUrl] = useState<string>(""); // Validated Audio URL
+    const [audioRetryCount, setAudioRetryCount] = useState<number>(0); // Tracks audio playback retries
+    const [isRetrying, setIsRetrying] = useState<boolean>(false); // Prevents concurrent retries
     const audioRef = useRef<HTMLAudioElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
-    const maxRedirects = 5; // For additional client-side control if needed
 
-    // Function to validate and fetch the audio URL via the API route
-    const fetchValidatedAudioUrl = async (url: string): Promise<string> => {
-        const response = await fetch(`/api/validate-audio-url?url=${encodeURIComponent(url)}`);
-        const contentType = response.headers.get("content-type");
-        if (!response.ok) {
-            // Attempt to parse error message
+    // Configuration for retries
+    const MAX_URL_VALIDATION_RETRIES = 3; // Max retries for URL validation
+    const MAX_AUDIO_RETRIES = 3; // Max retries for audio playback errors
+    const RETRY_DELAY_MS = 500; // 500ms delay between retries
+
+    // Helper function to pause execution for a specified duration
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    /**
+     * Validates and fetches the audio URL via the API route with retries.
+     * @param url - The original audio stream URL.
+     * @param retryCount - Current retry attempt for URL validation.
+     * @returns The validated audio URL.
+     */
+    const fetchValidatedAudioUrl = async (url: string, retryCount = 0): Promise<string> => {
+        try {
+            const response = await fetch(`/api/validate-audio-url?url=${encodeURIComponent(url)}`);
+            const contentType = response.headers.get("content-type");
+
+            if (!response.ok) {
+                // Attempt to parse error message from JSON response
+                if (contentType && contentType.includes("application/json")) {
+                    const data = await response.json();
+                    throw new Error(data.error || "Failed to validate audio URL.");
+                } else {
+                    // Fallback error message for non-JSON responses
+                    throw new Error(`Failed to validate audio URL. Status: ${response.status}`);
+                }
+            }
+
             if (contentType && contentType.includes("application/json")) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to validate audio URL.');
+                if (data.url) {
+                    return data.url;
+                } else {
+                    throw new Error("Invalid response from server.");
+                }
             } else {
-                // Fallback error message
-                throw new Error(`Failed to validate audio URL. Status: ${response.status}`);
+                throw new Error("Expected JSON response from server.");
             }
-        }
-        if (contentType && contentType.includes("application/json")) {
-            const data = await response.json();
-            if (data.url) {
-                return data.url;
+        } catch (err: any) {
+            if (retryCount < MAX_URL_VALIDATION_RETRIES) {
+                // 500ms delay before retrying
+                await sleep(RETRY_DELAY_MS);
+                return await fetchValidatedAudioUrl(url, retryCount + 1);
             } else {
-                throw new Error('Invalid response from server.');
+                throw err;
             }
-        } else {
-            throw new Error('Expected JSON response from server.');
         }
     };
 
-    // Function to fetch station details and validate audio URL
+    /**
+     * Fetches station details and validates the audio URL.
+     * Resets audio retry count upon successful validation.
+     */
     const fetchStationDetails = async () => {
         setLoading(true);
-        setError(null);
+        setStationError(null); // Reset station error
+        setValidationError(null); // Reset validation error
+        setPlaybackError(null); // Reset playback error
         setAudioUrl("");
+        setAudioRetryCount(0); // Reset audio retry count on new fetch
 
         try {
             const data: Station[] = await fetchWithFallback<Station[]>(
@@ -69,17 +103,22 @@ export default function StationDetailsClient({
                 const fetchedStation = data[0];
                 setStation(fetchedStation);
 
-                // Validate the audio URL via the API route
+                // Validate the audio URL via the API route with retries
                 const validUrl = await fetchValidatedAudioUrl(fetchedStation.url);
                 setAudioUrl(validUrl);
             } else {
                 throw new Error("No station details found.");
             }
-        } catch (err) {
+        } catch (err: any) {
             if (err instanceof Error) {
-                setError(err.message);
+                // Distinguish between validation errors and station fetching errors
+                if (err.message.includes("validate")) {
+                    setValidationError(err.message);
+                } else {
+                    setStationError(err.message);
+                }
             } else {
-                setError("An unknown error occurred.");
+                setStationError("An unknown error occurred.");
             }
         } finally {
             setLoading(false);
@@ -88,6 +127,7 @@ export default function StationDetailsClient({
 
     useEffect(() => {
         fetchStationDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stationuuid]);
 
     // Set the document title when station data is available
@@ -98,31 +138,45 @@ export default function StationDetailsClient({
             document.title = "SolAudio.io";
         }
 
-        // Optional: Cleanup to reset title when component unmounts
+        // Cleanup to reset title when component unmounts
         return () => {
             document.title = "SolAudio.io";
         };
-    }, [station]);
+    }, [station, country]);
 
-    // Handle audio playback errors
+    /**
+     * Handles audio playback errors by attempting to fetch a new URL.
+     * Limits the number of retry attempts to prevent infinite loops.
+     */
     const handleAudioError = async () => {
         if (!station) return;
 
-        setError("Failed to play audio. Attempting to fetch a new URL...");
+        if (audioRetryCount >= MAX_AUDIO_RETRIES || isRetrying) {
+            setPlaybackError("Failed to play audio after multiple attempts.");
+            return;
+        }
+
+        setIsRetrying(true);
+        setPlaybackError(`Failed to play audio. Attempting to fetch a new URL... (Attempt ${audioRetryCount + 1} of ${MAX_AUDIO_RETRIES})`);
+        setAudioRetryCount((prev) => prev + 1);
+
         try {
             const validUrl = await fetchValidatedAudioUrl(station.url);
             setAudioUrl(validUrl);
-            setError(null);
+            setPlaybackError(null);
             audioRef.current?.play();
-        } catch (err) {
+        } catch (err: any) {
             if (err instanceof Error) {
-                setError(`Error fetching audio: ${err.message}`);
+                setPlaybackError(`Error fetching audio: ${err.message}`);
             } else {
-                setError("An unknown error occurred while fetching audio.");
+                setPlaybackError("An unknown error occurred while fetching audio.");
             }
+        } finally {
+            setIsRetrying(false);
         }
     };
 
+    // Render loading state
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -133,14 +187,25 @@ export default function StationDetailsClient({
         );
     }
 
-    if (error) {
+    // Render station fetching errors
+    if (stationError) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                <p className="text-lg text-red-500">{error}</p>
+                <p className="text-lg text-red-500">{stationError}</p>
             </div>
         );
     }
 
+    // Render validation errors
+    if (validationError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                <p className="text-lg text-red-500">{validationError}</p>
+            </div>
+        );
+    }
+
+    // Render message if station is not found
     if (!station) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -151,6 +216,7 @@ export default function StationDetailsClient({
         );
     }
 
+    // Render main UI with playback errors displayed above the audio player
     return (
         <div className="min-h-screen p-8 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
             <header className="text-center mb-8">
@@ -164,6 +230,20 @@ export default function StationDetailsClient({
             </header>
 
             <div className="flex flex-col items-center">
+                {/* Display validation error above the audio player */}
+                {validationError && (
+                    <p className="text-lg text-red-500 mb-2">
+                        {validationError}
+                    </p>
+                )}
+
+                {/* Display playback error above the audio player */}
+                {playbackError && (
+                    <p className="text-lg text-red-500 mb-2">
+                        {playbackError}
+                    </p>
+                )}
+
                 {audioUrl ? (
                     <audio
                         ref={audioRef}
