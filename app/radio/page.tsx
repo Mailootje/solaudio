@@ -140,7 +140,7 @@ export default function RadioPage() {
                             {country.stationcount} stations
                             {country.brokencount > 0 && (
                                 <span className="ml-2 text-red-500">
-                                    ({country.brokencount} broken)
+                                    ({country.brokencount} Currently out of service)
                                 </span>
                             )}
                         </p>
