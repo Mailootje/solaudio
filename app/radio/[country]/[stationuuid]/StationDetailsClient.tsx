@@ -22,35 +22,71 @@ export default function StationDetailsClient({
     const [station, setStation] = useState<Station | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [audioUrl, setAudioUrl] = useState<string>(""); // Validated Audio URL
     const audioRef = useRef<HTMLAudioElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const maxRedirects = 5; // For additional client-side control if needed
+
+    // Function to validate and fetch the audio URL via the API route
+    const fetchValidatedAudioUrl = async (url: string): Promise<string> => {
+        const response = await fetch(`/api/validate-audio-url?url=${encodeURIComponent(url)}`);
+        const contentType = response.headers.get("content-type");
+        if (!response.ok) {
+            // Attempt to parse error message
+            if (contentType && contentType.includes("application/json")) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to validate audio URL.');
+            } else {
+                // Fallback error message
+                throw new Error(`Failed to validate audio URL. Status: ${response.status}`);
+            }
+        }
+        if (contentType && contentType.includes("application/json")) {
+            const data = await response.json();
+            if (data.url) {
+                return data.url;
+            } else {
+                throw new Error('Invalid response from server.');
+            }
+        } else {
+            throw new Error('Expected JSON response from server.');
+        }
+    };
+
+    // Function to fetch station details and validate audio URL
+    const fetchStationDetails = async () => {
+        setLoading(true);
+        setError(null);
+        setAudioUrl("");
+
+        try {
+            const data: Station[] = await fetchWithFallback<Station[]>(
+                generateApiUrls("/json/stations/byuuid/", `${stationuuid}`)
+            );
+
+            if (data.length > 0) {
+                const fetchedStation = data[0];
+                setStation(fetchedStation);
+
+                // Validate the audio URL via the API route
+                const validUrl = await fetchValidatedAudioUrl(fetchedStation.url);
+                setAudioUrl(validUrl);
+            } else {
+                throw new Error("No station details found.");
+            }
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unknown error occurred.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStationDetails = async () => {
-            setLoading(true);
-
-            try {
-                const data: Station[] = await fetchWithFallback<Station[]>(
-                    generateApiUrls("/json/stations/byuuid/", `${stationuuid}`)
-                );
-
-                if (data.length > 0) {
-                    setStation(data[0]); // Use the first result
-                } else {
-                    throw new Error("No station details found.");
-                }
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError("An unknown error occurred.");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchStationDetails();
     }, [stationuuid]);
 
@@ -68,7 +104,24 @@ export default function StationDetailsClient({
         };
     }, [station]);
 
-    // ... (Rest of your component remains unchanged)
+    // Handle audio playback errors
+    const handleAudioError = async () => {
+        if (!station) return;
+
+        setError("Failed to play audio. Attempting to fetch a new URL...");
+        try {
+            const validUrl = await fetchValidatedAudioUrl(station.url);
+            setAudioUrl(validUrl);
+            setError(null);
+            audioRef.current?.play();
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(`Error fetching audio: ${err.message}`);
+            } else {
+                setError("An unknown error occurred while fetching audio.");
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -111,13 +164,20 @@ export default function StationDetailsClient({
             </header>
 
             <div className="flex flex-col items-center">
-                <audio
-                    ref={audioRef}
-                    controls
-                    className="w-full max-w-md mt-4"
-                    src={station.url}
-                    crossOrigin="anonymous"
-                ></audio>
+                {audioUrl ? (
+                    <audio
+                        ref={audioRef}
+                        controls
+                        className="w-full max-w-md mt-4"
+                        src={audioUrl}
+                        crossOrigin="anonymous"
+                        onError={handleAudioError}
+                    ></audio>
+                ) : (
+                    <p className="text-gray-600 dark:text-gray-400 mt-4">
+                        Loading audio...
+                    </p>
+                )}
 
                 <canvas
                     ref={canvasRef}
